@@ -9,6 +9,7 @@ import asyncio
 import decky_plugin
 import ambient_light_sensor
 import fan_support
+import fan_watchdog
 import legion_configurator
 import legion_space
 import legion_go2_brightness
@@ -31,10 +32,59 @@ try:
 except Exception as e:
     logging.error(f"exception|{e}")
 
+# ── Fan watchdog state ────────────────────────────────────────────────────────
+
+_fan_cache = {
+    'custom_curves_enabled': False,
+    'fan_per_game_enabled': False,
+    'fan_profiles': {},
+    'current_game_id': 'default',
+    'last_curve': None,
+}
+
+
+def _get_active_fan_profile():
+    profiles = _fan_cache.get('fan_profiles', {})
+    if _fan_cache.get('fan_per_game_enabled'):
+        game_id = _fan_cache.get('current_game_id', 'default')
+        return profiles.get(game_id) or profiles.get('default')
+    return profiles.get('default')
+
+
+def _get_active_profile_threshold():
+    profile = _get_active_fan_profile()
+    if not profile:
+        return None
+    threshold = profile.get('fullFanSpeedThreshold')
+    return int(threshold) if threshold is not None else None
+
+
+def _is_full_fan_always_on():
+    if not _fan_cache.get('custom_curves_enabled'):
+        return True
+    profile = _get_active_fan_profile()
+    return bool(profile.get('fullFanSpeedEnabled', False)) if profile else True
+
+
+# ── Plugin ────────────────────────────────────────────────────────────────────
+
 class Plugin:
     # Asyncio-compatible long-running code, executed in a task when the plugin is loaded
     async def _main(self):
         decky_plugin.logger.info("Hello World!")
+
+        s = settings.get_settings()
+        _fan_cache['custom_curves_enabled'] = bool(s.get('customFanCurvesEnabled', False))
+        _fan_cache['fan_per_game_enabled'] = bool(s.get('fanPerGameProfilesEnabled', False))
+        _fan_cache['fan_profiles'] = s.get('fan', {})
+
+        self._watchdog = fan_watchdog.FanWatchdog(
+            legion_space=legion_space,
+            get_last_curve=lambda: _fan_cache.get('last_curve'),
+            get_active_profile_threshold=_get_active_profile_threshold,
+            is_user_full_fan_always_on=_is_full_fan_always_on,
+        )
+        self._watchdog.start()
 
         if legion_go2_brightness.is_legion_go_2():
             decky_plugin.logger.info("Legion Go 2 detected, starting backlight watcher")
@@ -125,6 +175,11 @@ class Plugin:
         settings.set_setting('customFanCurvesEnabled', customFanCurvesEnabled)
         settings.set_all_fan_profiles(fanProfiles)
 
+        _fan_cache['custom_curves_enabled'] = customFanCurvesEnabled
+        _fan_cache['fan_per_game_enabled'] = fanPerGameProfilesEnabled
+        _fan_cache['fan_profiles'] = {k: dict(v) for k, v in fanProfiles.items()}
+        _fan_cache['current_game_id'] = currentGameId
+
         try:
             active_fan_profile = fanProfiles.get('default')
 
@@ -135,13 +190,19 @@ class Plugin:
                         active_fan_profile = fan_profile
 
                 enable_full_fan_speed = active_fan_profile.get("fullFanSpeedEnabled", False)
+                threshold = active_fan_profile.pop("fullFanSpeedThreshold", None)
                 del active_fan_profile['fullFanSpeedEnabled']
+                if not enable_full_fan_speed and threshold is not None:
+                    for k in active_fan_profile:
+                        if int(k) >= threshold:
+                            active_fan_profile[k] = 115
                 active_fan_curve = list(active_fan_profile.values())
 
                 if not enable_full_fan_speed:
                     legion_space.set_full_fan_speed(False)
                     sleep(0.5)
                     legion_space.set_active_fan_curve(active_fan_curve)
+                    _fan_cache['last_curve'] = active_fan_curve
                 else:
                     legion_space.set_full_fan_speed(True)
             elif not customFanCurvesEnabled and settings.supports_custom_fan_curves():
@@ -222,6 +283,8 @@ class Plugin:
     # Function called first during the unload process, utilize this to handle your plugin being removed
     async def _unload(self):
         decky_plugin.logger.info("Goodbye World!")
+        if hasattr(self, '_watchdog'):
+            self._watchdog.stop()
         legion_go2_brightness.stop_backlight_watcher()
         if hasattr(self, '_backlight_task'):
             self._backlight_task.cancel()

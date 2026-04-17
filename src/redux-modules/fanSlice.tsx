@@ -27,7 +27,8 @@ const DEFAULT_FAN_VALUES: FanProfile = {
   80: 80,
   90: 95,
   100: 100,
-  fullFanSpeedEnabled: false
+  fullFanSpeedEnabled: false,
+  fullFanSpeedThreshold: null
 };
 
 type FanSpeed = number;
@@ -47,6 +48,7 @@ type FanCurve = {
 
 interface FanProfile extends FanCurve {
   fullFanSpeedEnabled: boolean;
+  fullFanSpeedThreshold?: number | null;
 }
 
 type FanProfiles = {
@@ -95,6 +97,18 @@ export const fanSlice = createSlice({
         state.fanProfiles[currentGameId].fullFanSpeedEnabled = enabled;
       } else {
         state.fanProfiles.default.fullFanSpeedEnabled = enabled;
+      }
+    },
+    setFullFanSpeedThreshold: (state, action: PayloadAction<number | null>) => {
+      const threshold = action.payload;
+
+      const perGameProfilesEnabled = state.fanPerGameProfilesEnabled;
+
+      if (perGameProfilesEnabled) {
+        const currentGameId = extractCurrentGameId();
+        state.fanProfiles[currentGameId].fullFanSpeedThreshold = threshold;
+      } else {
+        state.fanProfiles.default.fullFanSpeedThreshold = threshold;
       }
     },
     updateFanCurve: (
@@ -182,6 +196,7 @@ export const selectActiveFanCurve = (state: RootState) => {
 
   const p = cloneDeep(profile) as any;
   delete p.fullFanSpeedEnabled;
+  delete p.fullFanSpeedThreshold;
   const x = p as FanCurve;
 
   return x;
@@ -192,6 +207,11 @@ export const selectEnableFullFanSpeedMode = (state: RootState) => {
   return Boolean(profile.fullFanSpeedEnabled);
 };
 
+export const selectFullFanSpeedThreshold = (state: RootState) => {
+  const profile = selectActiveFanProfile(state);
+  return profile?.fullFanSpeedThreshold ?? null;
+};
+
 // -------------
 // middleware
 // -------------
@@ -200,7 +220,8 @@ const mutatingActionTypes = [
   fanSlice.actions.setFanPerGameProfilesEnabled.type,
   fanSlice.actions.updateFanCurve.type,
   fanSlice.actions.updateFanProfiles.type,
-  fanSlice.actions.setEnableFullFanSpeedMode.type
+  fanSlice.actions.setEnableFullFanSpeedMode.type,
+  fanSlice.actions.setFullFanSpeedThreshold.type
 ];
 
 export const saveFanSettingsMiddleware =

@@ -6,6 +6,7 @@ import {
   selectCustomFanCurvesEnabled,
   selectEnableFullFanSpeedMode,
   selectFanPerGameProfilesEnabled,
+  selectFullFanSpeedThreshold,
   selectSupportsCustomFanCurves
 } from '../redux-modules/fanSlice';
 import { getServerApi } from '../backend/utils';
@@ -191,6 +192,14 @@ export const useFanFixFlow = (): FanFixFlowState => {
   }, [startPolling, stopPolling]);
 
   return { phase, progressStep, errorMsg, checkingSupport, onApplyFix, onCheckAgain };
+};
+
+export const useFullFanSpeedThreshold = () => {
+  const threshold = useSelector(selectFullFanSpeedThreshold);
+  const dispatch = useDispatch();
+  const setThreshold = (value: number | null) =>
+    dispatch(fanSlice.actions.setFullFanSpeedThreshold(value));
+  return { threshold, setThreshold };
 };
 
 // ── Kernel string ──────────────────────────────────────────────────────────────
