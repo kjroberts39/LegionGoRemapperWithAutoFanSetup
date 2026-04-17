@@ -18,16 +18,21 @@ import { Provider, useSelector } from 'react-redux';
 import { currentGameIdListener } from './backend/currentGameIdListener';
 import logo from '../assets/Icon.png';
 import FanPanel from './components/fan/FanPanel';
+import FanSupportFooter from './components/fan/FanSupportFooter';
 import AlsPanel from './components/als/ALSPanel';
 import ErrorBoundary from './components/ErrorBoundary';
 import OtaUpdates from './components/OtaUpdates';
 import { useChargeLimitEnabled } from './hooks/ui';
-import { useSupportsCustomFanCurves } from './hooks/fan';
+import { useFanFixFlow, useSupportsCustomFanCurves } from './hooks/fan';
 
 const Content: VFC<{ serverAPI?: ServerAPI }> = memo(() => {
   const loading = useSelector(getInitialLoading);
   const { chargeLimitEnabled, setChargeLimit } = useChargeLimitEnabled();
   const supportsAcpiCall = useSupportsCustomFanCurves();
+  // Lifted here so fix-flow state survives the FanSupportRepair → sliders
+  // transition and so FanSupportFooter can live below Remap Buttons.
+  const fixFlow = useFanFixFlow();
+
   if (loading) {
     return null;
   }
@@ -51,11 +56,16 @@ const Content: VFC<{ serverAPI?: ServerAPI }> = memo(() => {
         <ControllerLightingPanel />
       </ErrorBoundary>
       <ErrorBoundary title="Fan Panel">
-        <FanPanel />
+        <FanPanel fixFlow={fixFlow} />
       </ErrorBoundary>
       <ErrorBoundary title="Remap Buttons">
         <RemapButtons />
       </ErrorBoundary>
+      {supportsAcpiCall && (
+        <ErrorBoundary title="Fan Support">
+          <FanSupportFooter fixFlow={fixFlow} />
+        </ErrorBoundary>
+      )}
       <ErrorBoundary>
         <OtaUpdates />
       </ErrorBoundary>

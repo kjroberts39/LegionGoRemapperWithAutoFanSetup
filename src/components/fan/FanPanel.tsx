@@ -5,6 +5,7 @@ import {
   ToggleField
 } from 'decky-frontend-lib';
 import {
+  FanFixFlowState,
   useCustomFanCurvesEnabled,
   useEnableFullFanSpeedMode,
   useFanPerGameProfilesEnabled,
@@ -12,9 +13,10 @@ import {
 } from '../../hooks/fan';
 import { capitalize } from 'lodash';
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
+import { useState, VFC } from 'react';
 import { selectCurrentGameDisplayName } from '../../redux-modules/uiSlice';
 import FanCurveSliders from './FanCurveSliders';
+import FanSupportRepair from './FanSupportRepair';
 import { IoMdArrowDropdown, IoMdArrowDropup } from 'react-icons/io';
 
 const useTitle = (fanPerGameProfilesEnabled: boolean) => {
@@ -31,7 +33,11 @@ const useTitle = (fanPerGameProfilesEnabled: boolean) => {
 
 const WARNING_KEY = 'legionGoRemapper.customfan.warning';
 
-const FanPanel = () => {
+interface FanPanelProps {
+  fixFlow: FanFixFlowState;
+}
+
+const FanPanel: VFC<FanPanelProps> = ({ fixFlow }) => {
   const supportsFanCurves = useSupportsCustomFanCurves();
   const [showSliders, setShowSliders] = useState(false);
   const [acknowledgeWarning, setAcknowledgeWarning] = useState(
@@ -52,7 +58,7 @@ const FanPanel = () => {
   const title = useTitle(fanPerGameProfilesEnabled);
 
   if (!supportsFanCurves) {
-    return null;
+    return <FanSupportRepair fixFlow={fixFlow} />;
   }
 
   return (

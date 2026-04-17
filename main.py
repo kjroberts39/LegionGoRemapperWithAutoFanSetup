@@ -8,6 +8,7 @@ import logging
 import asyncio
 import decky_plugin
 import ambient_light_sensor
+import fan_support
 import legion_configurator
 import legion_space
 import legion_go2_brightness
@@ -247,3 +248,41 @@ class Plugin:
 
     async def log_info(self, info):
         logging.info(info)
+
+    # ── Fan support (DKMS repair) ─────────────────────────────────────────────
+
+    async def get_fan_support_status(self):
+        """Returns 'ok', 'missing', or 'unknown' for the current kernel."""
+        return fan_support.get_fan_support_status()
+
+    async def get_current_kernel(self):
+        """Returns raw uname -r output for display in the UI."""
+        return fan_support.get_current_kernel()
+
+    async def apply_fan_fix(self):
+        """
+        Starts the DKMS repair sequence in a background thread.
+        Returns {"started": True} or {"started": False, "error": "<reason>"}.
+        Frontend should poll get_fan_fix_progress() immediately after.
+        """
+        return fan_support.apply_fan_fix()
+
+    async def get_fan_fix_progress(self):
+        """Returns current fix-worker progress for frontend polling."""
+        return fan_support.get_fan_fix_progress()
+
+    async def restart_decky(self):
+        """Restarts the Decky Loader process via pkill so systemd relaunches it."""
+        return fan_support.restart_decky()
+
+    async def reboot_device(self):
+        """Reboots the device immediately via systemctl reboot."""
+        return fan_support.reboot_device()
+
+    async def refresh_fan_support(self):
+        """
+        Re-checks whether acpi_call is loadable and returns True/False.
+        Called after a successful fix so the frontend can update
+        supportsCustomFanCurves in the Redux store without a full reload.
+        """
+        return settings.supports_custom_fan_curves()

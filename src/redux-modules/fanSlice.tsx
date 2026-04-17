@@ -113,6 +113,9 @@ export const fanSlice = createSlice({
     },
     updateFanProfiles: (state, action: PayloadAction<FanProfiles>) => {
       merge(state.fanProfiles, action.payload);
+    },
+    setSupportsCustomFanCurves: (state, action: PayloadAction<boolean>) => {
+      state.supportsCustomFanCurves = action.payload;
     }
   },
   extraReducers: (builder) => {
