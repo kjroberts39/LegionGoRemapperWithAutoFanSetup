@@ -1,0 +1,1 @@
+../submodules/LegionFanFix/py_modules/fan_support.py

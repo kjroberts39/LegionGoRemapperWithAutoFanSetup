@@ -1,0 +1,3 @@
+[submodule "submodules/LegionFanFix"]
+	path = submodules/LegionFanFix
+	url = git@github.com:kjroberts39/LegionFanFix.git
