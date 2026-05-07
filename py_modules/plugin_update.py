@@ -7,7 +7,7 @@ import os
 
 def download_latest_build():
     # ssl._create_default_https_context = ssl._create_unverified_context
-    url = "http://api.github.com/repos/aarron-lee/LegionGoRemapper/releases/latest"
+    url = "http://api.github.com/repos/kjroberts39/LegionGoRemapperWithAutoFanSetup/releases/latest"
 
     gcontext = ssl.SSLContext()
 
