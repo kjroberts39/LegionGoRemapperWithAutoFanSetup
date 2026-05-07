@@ -34,7 +34,7 @@ const useTitle = (fanPerGameProfilesEnabled: boolean) => {
 const WARNING_KEY = 'legionGoRemapper.customfan.warning';
 
 interface FanPanelProps {
-  fixFlow: FanFixFlowState;
+  fixFlow: FanFixFlowState | null;
 }
 
 const FanPanel: VFC<FanPanelProps> = ({ fixFlow }) => {
@@ -57,7 +57,7 @@ const FanPanel: VFC<FanPanelProps> = ({ fixFlow }) => {
     useFanPerGameProfilesEnabled();
   const title = useTitle(fanPerGameProfilesEnabled);
 
-  if (!supportsFanCurves) {
+  if (!supportsFanCurves && fixFlow) {
     return <FanSupportRepair fixFlow={fixFlow} />;
   }
 
