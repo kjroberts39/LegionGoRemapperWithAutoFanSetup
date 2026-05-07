@@ -11,12 +11,26 @@ repair cycle without waiting for one.
 - Fan curves responding normally (ACPI fan support active)
 - `sudo` access on the device
 
+## Install the Test Release
+
+The `testing/` directory is only included in the fork's test release, not the
+original plugin release. Install it first:
+
+```bash
+curl -L https://github.com/kjroberts39/LegionGoRemapperWithAutoFanSetup/releases/download/v0.3.1/LegionGoRemapper.tar.gz -o /tmp/LegionGoRemapper.tar.gz
+sudo HOME=/home/deck sh ~/homebrew/plugins/LegionGoRemapper/ota_update.sh
+```
+
+> **Note:** Use `sudo HOME=/home/deck sh` rather than just `sudo sh` — sudo
+> resets `$HOME` to `/root` which causes the install script to look in the
+> wrong place.
+
 ## Typical Test Workflow
 
 ### 1. Confirm healthy baseline
 
 ```bash
-./testing/test_fan_fix.sh baseline
+~/homebrew/plugins/LegionGoRemapper/testing/test_fan_fix.sh baseline
 ```
 
 Verifies that DKMS is registered, the `.ko` file is present, and the module is
@@ -25,12 +39,15 @@ loaded. Also confirms fan curves are working before you break anything.
 ### 2. Simulate the broken state
 
 ```bash
-sudo ./testing/test_fan_fix.sh break
+sudo bash ~/homebrew/plugins/LegionGoRemapper/testing/test_fan_fix.sh break
 ```
 
 Removes the DKMS registration and the `.ko` file for the running kernel, then
 restarts Decky. This is the most common real-world failure scenario (kernel
 update wiped the module).
+
+> **Note:** Use `sudo bash <path>` rather than `sudo <path>` — the script file
+> permissions prevent sudo from executing it directly.
 
 After this runs, open the Legion Go Remapper panel in Decky — the Fan Control
 section should switch from the normal curve sliders to the **repair UI** with
@@ -45,7 +62,7 @@ or **Reboot** depending on whether the module loaded live.
 ### 4. Verify the fix worked
 
 ```bash
-./testing/test_fan_fix.sh verify-fix
+~/homebrew/plugins/LegionGoRemapper/testing/test_fan_fix.sh verify-fix
 ```
 
 Checks that DKMS shows the module as installed, the `.ko` file is back, and the
@@ -60,9 +77,9 @@ These test less common failure modes that the fix also handles:
 
 | Command | What it simulates |
 |---|---|
-| `sudo ./testing/test_fan_fix.sh break-keyring` | Uninitialized pacman keyring (fresh install / factory reset) |
-| `sudo ./testing/test_fan_fix.sh break-headers` | Missing kernel headers build path |
-| `sudo ./testing/test_fan_fix.sh break-dkms-only` | DKMS registration missing but `.ko` still present |
+| `sudo bash .../test_fan_fix.sh break-keyring` | Uninitialized pacman keyring (fresh install / factory reset) |
+| `sudo bash .../test_fan_fix.sh break-headers` | Missing kernel headers build path |
+| `sudo bash .../test_fan_fix.sh break-dkms-only` | DKMS registration missing but `.ko` still present |
 
 For a complete test of `break-keyring`, run `break` first, then `break-keyring`.
 
@@ -73,7 +90,7 @@ For a complete test of `break-keyring`, run `break` first, then `break-keyring`.
 If something goes wrong and Decky is unavailable:
 
 ```bash
-sudo ./testing/test_fan_fix.sh restore
+sudo bash ~/homebrew/plugins/LegionGoRemapper/testing/test_fan_fix.sh restore
 ```
 
 Runs the same steps as the plugin (keyring init, headers install, DKMS build,
@@ -84,7 +101,7 @@ modprobe) directly from the shell.
 ## Status at Any Time
 
 ```bash
-./testing/test_fan_fix.sh status
+~/homebrew/plugins/LegionGoRemapper/testing/test_fan_fix.sh status
 ```
 
 Prints the current state of the ACPI module, DKMS registration, `.ko` file,
