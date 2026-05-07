@@ -6,6 +6,7 @@ import {
 import { VFC } from 'react';
 import { FanFixFlowState, useCurrentKernel } from '../../hooks/fan';
 import FanFixFlow from './FanFixFlow';
+import FanStatusBadge from './FanStatusBadge';
 
 interface FanSupportRepairProps {
   fixFlow: FanFixFlowState;
@@ -30,6 +31,9 @@ const FanSupportRepair: VFC<FanSupportRepairProps> = ({ fixFlow }) => {
           border: '1px solid rgba(232,112,64,0.25)', borderRadius: '4px',
           fontSize: '12px', color: '#c87050', lineHeight: 1.6,
         }}>
+          <div style={{ marginBottom: '8px' }}>
+            <FanStatusBadge status="missing" />
+          </div>
           <div>
             &#9888; ACPI fan support is not active for the current kernel.
             Custom fan curves will not respond until it is restored.

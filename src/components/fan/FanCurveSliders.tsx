@@ -52,7 +52,7 @@ const FanCurveSliders: VFC = () => {
       return dispatch(fanSlice.actions.updateFanCurve({ temp: t, fanSpeed: speed }));
     };
 
-    const showThresholdToggle = tempNum >= 70 && threshold === null;
+    const showThresholdToggle = tempNum >= 60 && threshold === null;
 
     return (
       <Fragment key={idx}>

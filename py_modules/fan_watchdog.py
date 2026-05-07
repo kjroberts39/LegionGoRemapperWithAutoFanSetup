@@ -121,12 +121,13 @@ class FanWatchdog:
             return
 
         threshold = self._get_active_profile_threshold()
-        if threshold is not None:
-            engage_c = float(threshold)
-            release_c = max(60.0, engage_c - 10.0)
-        else:
-            engage_c = self._default_engage_c
-            release_c = self._default_release_c
+        if threshold is None:
+            self._engage_count = 0
+            self._release_count = 0
+            return
+
+        engage_c = float(threshold)
+        release_c = max(60.0, engage_c - 10.0)
 
         temp = self._read_max_temp()
         if temp is None:
@@ -158,8 +159,10 @@ class FanWatchdog:
                     self._release_count = 0
                     self._legion_space.set_full_fan_speed(False)
                     time.sleep(0.3)
-                    curve = self._get_last_curve()
-                    if curve:
-                        self._legion_space.set_active_fan_curve(curve)
+                    # Re-check: user may have toggled manual full-speed on during the sleep
+                    if not self._is_user_full_fan_always_on():
+                        curve = self._get_last_curve()
+                        if curve:
+                            self._legion_space.set_active_fan_curve(curve)
             else:
                 self._release_count = 0

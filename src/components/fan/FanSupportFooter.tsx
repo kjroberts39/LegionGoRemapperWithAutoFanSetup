@@ -4,20 +4,16 @@ import {
   PanelSectionRow,
 } from 'decky-frontend-lib';
 import { VFC } from 'react';
-import { FanFixFlowState } from '../../hooks/fan';
+import { FanFixFlowState, timeSince } from '../../hooks/fan';
 import FanFixFlow from './FanFixFlow';
+import FanStatusBadge from './FanStatusBadge';
 
 interface FanSupportFooterProps {
   fixFlow: FanFixFlowState;
 }
 
-/**
- * Compact footer appended below normal fan curve sliders when
- * supportsCustomFanCurves is true.  Surfaces fan-support health at a glance
- * and lets the user re-check or reapply the fix without navigating away.
- */
 const FanSupportFooter: VFC<FanSupportFooterProps> = ({ fixFlow }) => {
-  const { phase, progressStep, errorMsg, checkingSupport, onApplyFix, onCheckAgain } = fixFlow;
+  const { phase, progressStep, errorMsg, checkingSupport, lastChecked, onApplyFix, onCheckAgain } = fixFlow;
   const isFixing = phase === 'fixing';
 
   return (
@@ -27,9 +23,7 @@ const FanSupportFooter: VFC<FanSupportFooterProps> = ({ fixFlow }) => {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           width: '100%', boxSizing: 'border-box',
         }}>
-          <span style={{ fontSize: '12px', color: '#4caf6e' }}>
-            &#10003; Fan support: OK
-          </span>
+          <FanStatusBadge status={checkingSupport ? 'checking' : 'ok'} />
           <span
             style={{
               fontSize: '11px',
@@ -43,6 +37,11 @@ const FanSupportFooter: VFC<FanSupportFooterProps> = ({ fixFlow }) => {
             {checkingSupport ? 'Checking…' : 'Check again'}
           </span>
         </div>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <span style={{ fontSize: '11px', color: '#6a5a40' }}>
+          Last checked: {timeSince(lastChecked)}
+        </span>
       </PanelSectionRow>
 
       <FanFixFlow phase={phase} progressStep={progressStep} errorMsg={errorMsg} />

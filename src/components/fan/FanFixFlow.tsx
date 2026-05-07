@@ -9,13 +9,6 @@ interface FanFixFlowProps {
   errorMsg: string;
 }
 
-/**
- * Shared inline content for the fan-fix apply flow.
- * Renders nothing when idle; renders a progress row while fixing,
- * and a result banner on success or error.
- * Embedded by both FanSupportRepair (full-takeover) and FanSupportFooter
- * (compact) so the treatment is consistent.
- */
 const FanFixFlow: VFC<FanFixFlowProps> = ({ phase, progressStep, errorMsg }) => {
   if (phase === 'idle') return null;
 
@@ -60,8 +53,7 @@ const FanFixFlow: VFC<FanFixFlowProps> = ({ phase, progressStep, errorMsg }) => 
             border: '1px solid rgba(76,175,110,0.3)', borderRadius: '4px',
             fontSize: '12px', color: '#4caf6e', lineHeight: 1.5,
           }}>
-            &#10003; Fan support restored. Restart Decky or your device to
-            activate fan controls.
+            &#10003; Fan support restored. Restart Decky or your device to activate fan controls.
           </div>
         </PanelSectionRow>
       )}

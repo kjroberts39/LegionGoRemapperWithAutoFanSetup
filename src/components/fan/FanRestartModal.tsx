@@ -8,17 +8,14 @@ interface FanRestartModalProps {
   rebootRequired?: boolean;
 }
 
-/**
- * Shown after a successful fan-fix.
- * When rebootRequired is false (modprobe loaded the module live), offers an
- * immediate Decky restart — buttons are replaced by a spinning fan while
- * the process is killed.
- * When rebootRequired is true (modprobe failed, e.g. mismatched kernel headers
- * from a pending SteamOS update), tells the user to reboot instead; a Decky
- * restart alone won't help because the module isn't loaded yet.
- */
 const FanRestartModal: VFC<FanRestartModalProps> = ({ closeModal, rebootRequired = false }) => {
   const [restarting, setRestarting] = useState(false);
+
+  const handleAction = () => {
+    setRestarting(true);
+    const method = rebootRequired ? 'reboot_device' : 'restart_decky';
+    setTimeout(() => getServerApi()?.callPluginMethod(method, {}), 300);
+  };
 
   return (
     <ModalRoot closeModal={closeModal}>
@@ -31,10 +28,10 @@ const FanRestartModal: VFC<FanRestartModalProps> = ({ closeModal, rebootRequired
       <div style={{ fontSize: '13px', color: '#a09070', lineHeight: 1.6, marginBottom: '24px' }}>
         {rebootRequired
           ? 'Fan support has been installed. The kernel module could not be loaded immediately — this usually means SteamOS has a pending update. Reboot your device to activate fan controls.'
-          : 'Fan support has been restored. Restart Decky to activate fan controls in LegionGoRemapper immediately, or reboot your device at any time.'}
+          : 'Fan support has been restored. Restart Decky to activate fan controls immediately, or reboot your device at any time.'}
       </div>
 
-      {rebootRequired ? restarting ? (
+      {restarting ? (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           gap: '10px', padding: '10px 0',
@@ -46,7 +43,7 @@ const FanRestartModal: VFC<FanRestartModalProps> = ({ closeModal, rebootRequired
           <span style={{
             color: '#c8a84b', fontSize: '13px', fontWeight: 600, letterSpacing: '0.05em',
           }}>
-            Rebooting…
+            {rebootRequired ? 'Rebooting…' : 'Restarting Decky…'}
           </span>
         </div>
       ) : (
@@ -62,58 +59,14 @@ const FanRestartModal: VFC<FanRestartModalProps> = ({ closeModal, rebootRequired
             Later
           </button>
           <button
-            onClick={() => {
-              setRestarting(true);
-              setTimeout(() => getServerApi()?.callPluginMethod('reboot_device', {}), 300);
-            }}
+            onClick={handleAction}
             style={{
               padding: '8px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
               background: 'rgba(200,168,75,0.25)', color: '#c8a84b',
               border: '1px solid rgba(200,168,75,0.5)', borderRadius: '4px',
             }}
           >
-            Reboot Now
-          </button>
-        </div>
-      ) : restarting ? (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          gap: '10px', padding: '10px 0',
-        }}>
-          <FaFan style={{
-            color: '#c8a84b', fontSize: '18px',
-            animation: 'lgrRestartSpin 1.5s linear infinite',
-          }} />
-          <span style={{
-            color: '#c8a84b', fontSize: '13px', fontWeight: 600, letterSpacing: '0.05em',
-          }}>
-            Restarting Decky…
-          </span>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-          <button
-            onClick={() => closeModal?.()}
-            style={{
-              padding: '8px 18px', cursor: 'pointer', fontSize: '13px',
-              background: 'rgba(255,255,255,0.08)', color: '#aaa',
-              border: '1px solid rgba(255,255,255,0.15)', borderRadius: '4px',
-            }}
-          >
-            Later
-          </button>
-          <button
-            onClick={() => {
-              setRestarting(true);
-              setTimeout(() => getServerApi()?.callPluginMethod('restart_decky', {}), 300);
-            }}
-            style={{
-              padding: '8px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
-              background: 'rgba(200,168,75,0.25)', color: '#c8a84b',
-              border: '1px solid rgba(200,168,75,0.5)', borderRadius: '4px',
-            }}
-          >
-            Restart Decky
+            {rebootRequired ? 'Reboot Now' : 'Restart Decky'}
           </button>
         </div>
       )}

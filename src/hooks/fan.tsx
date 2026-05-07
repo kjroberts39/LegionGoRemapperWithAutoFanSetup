@@ -63,8 +63,17 @@ export interface FanFixFlowState {
   progressStep: string;
   errorMsg: string;
   checkingSupport: boolean;
+  lastChecked: number;
   onApplyFix: () => void;
   onCheckAgain: () => void;
+}
+
+export function timeSince(ts: number): string {
+  if (ts === 0) return 'never';
+  const seconds = Math.floor((Date.now() - ts) / 1000);
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  return `${Math.floor(seconds / 3600)} hr ago`;
 }
 
 interface FixProgressResult {
@@ -86,6 +95,7 @@ export const useFanFixFlow = (): FanFixFlowState => {
   const [progressStep, setProgressStep] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [checkingSupport, setCheckingSupport] = useState(false);
+  const [lastChecked, setLastChecked] = useState(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dispatch = useDispatch();
 
@@ -173,25 +183,37 @@ export const useFanFixFlow = (): FanFixFlowState => {
     setPhase('idle');
     setProgressStep('');
     setErrorMsg('');
+    setLastChecked(Date.now());
     setCheckingSupport(false);
   }, [refreshSupportState]);
 
-  // On mount: resume polling if a fix was running when the panel was closed.
+  // On mount: resume polling if a fix was running; otherwise auto-check status.
   useEffect(() => {
     const serverApi = getServerApi();
     if (!serverApi) return;
-    serverApi.callPluginMethod('get_fan_fix_progress', {}).then(({ result }) => {
-      const prog = result as FixProgressResult;
-      if (prog?.running) {
-        setPhase('fixing');
-        setProgressStep(prog.step || 'Running…');
-        startPolling();
+    const init = async () => {
+      try {
+        const { result } = await serverApi.callPluginMethod('get_fan_fix_progress', {});
+        const prog = result as FixProgressResult;
+        if (prog?.running) {
+          setPhase('fixing');
+          setProgressStep(prog.step || 'Running…');
+          startPolling();
+        } else {
+          setCheckingSupport(true);
+          await refreshSupportState();
+          setLastChecked(Date.now());
+          setCheckingSupport(false);
+        }
+      } catch {
+        // non-fatal
       }
-    }).catch(() => {});
+    };
+    init();
     return stopPolling;
-  }, [startPolling, stopPolling]);
+  }, [startPolling, stopPolling, refreshSupportState]);
 
-  return { phase, progressStep, errorMsg, checkingSupport, onApplyFix, onCheckAgain };
+  return { phase, progressStep, errorMsg, checkingSupport, lastChecked, onApplyFix, onCheckAgain };
 };
 
 export const useFullFanSpeedThreshold = () => {
