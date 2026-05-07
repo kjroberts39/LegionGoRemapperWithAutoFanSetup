@@ -24,6 +24,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import OtaUpdates from './components/OtaUpdates';
 import { useChargeLimitEnabled } from './hooks/ui';
 import { useFanFixFlow, useSupportsCustomFanCurves } from './hooks/fan';
+import { ENABLE_FAN_FIX } from './featureFlags';
 
 const Content: VFC<{ serverAPI?: ServerAPI }> = memo(() => {
   const loading = useSelector(getInitialLoading);
@@ -31,7 +32,8 @@ const Content: VFC<{ serverAPI?: ServerAPI }> = memo(() => {
   const supportsAcpiCall = useSupportsCustomFanCurves();
   // Lifted here so fix-flow state survives the FanSupportRepair → sliders
   // transition and so FanSupportFooter can live below Remap Buttons.
-  const fixFlow = useFanFixFlow();
+  const fixFlowData = useFanFixFlow();
+  const fixFlow = ENABLE_FAN_FIX ? fixFlowData : null;
 
   if (loading) {
     return null;
@@ -61,7 +63,7 @@ const Content: VFC<{ serverAPI?: ServerAPI }> = memo(() => {
       <ErrorBoundary title="Remap Buttons">
         <RemapButtons />
       </ErrorBoundary>
-      {supportsAcpiCall && (
+      {supportsAcpiCall && fixFlow && (
         <ErrorBoundary title="Fan Support">
           <FanSupportFooter fixFlow={fixFlow} />
         </ErrorBoundary>
